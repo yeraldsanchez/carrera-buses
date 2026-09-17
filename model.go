@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/harmonica"
+	"github.com/charmbracelet/lipgloss"
 )
 
 const fps = 120
@@ -22,11 +22,35 @@ func tick() tea.Cmd {
 	})
 }
 
+// raceResetMsg fires a few seconds after a race finishes, returning the menu
+// box from the winner announcement back to the normal start/exit menu.
+type raceResetMsg time.Time
+
+const resultDisplayTime = 3 * time.Second
+
+func resetAfterResult() tea.Cmd {
+	return tea.Tick(resultDisplayTime, func(t time.Time) tea.Msg {
+		return raceResetMsg(t)
+	})
+}
+
+// appState is which screen the menu box (and the input handling) is in.
+type appState int
+
+const (
+	stateMenu appState = iota
+	stateRacing
+	stateFinished
+)
+
 // raceModel is the bubbletea model driving the whole animation: physics,
 // track sizing (based on the real terminal width) and rendering.
 type raceModel struct {
 	width, height int
 	sized         bool
+
+	state    appState
+	selected int // 0 = Iniciar, 1 = Salir, only meaningful in stateMenu
 
 	blueBus, pinkbus Sprite
 
@@ -66,29 +90,60 @@ func (m raceModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.pinkbus = NewSprite(busGrid, pinkPalette)
 		}
 		m.target = TargetDistance(trackWidth, m.blueBus.FrontOffset)
-
-		if firstResize {
-			return m, tick()
-		}
 		return m, nil
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c", "esc":
+		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
 
+		switch m.state {
+		case stateMenu:
+			switch msg.String() {
+			case "q", "esc":
+				return m, tea.Quit
+			case "left", "right", "h", "l", "tab":
+				m.selected = 1 - m.selected
+			case "enter", " ":
+				if m.selected == 1 {
+					return m, tea.Quit
+				}
+				m.pos1, m.vel1 = 0, 0
+				m.pos2, m.vel2 = 0, 0
+				m.finished = false
+				m.result = ""
+				m.state = stateRacing
+				return m, tick()
+			}
+		case stateRacing, stateFinished:
+			switch msg.String() {
+			case "q", "esc":
+				return m, tea.Quit
+			}
+		}
+
 	case tickMsg:
-		if m.finished {
+		if m.state != stateRacing {
 			return m, nil
 		}
 		m.step()
 		if m.pos1 >= m.target || m.pos2 >= m.target {
 			m.finished = true
 			m.result = m.raceResult()
-			return m, nil
+			m.state = stateFinished
+			return m, resetAfterResult()
 		}
 		return m, tick()
+
+	case raceResetMsg:
+		if m.state == stateFinished {
+			m.state = stateMenu
+			m.selected = 0
+			m.finished = false
+			m.pos1, m.vel1 = 0, 0
+			m.pos2, m.vel2 = 0, 0
+		}
+		return m, nil
 	}
 
 	return m, nil
@@ -129,11 +184,11 @@ func applyRandomImpulse(vel *float64) {
 func (m raceModel) raceResult() string {
 	switch {
 	case m.pos1 >= m.target && m.pos2 >= m.target:
-		return "Tie!"
+		return "¡Empate!"
 	case m.pos1 >= m.target:
-		return "Blue bus wins!"
+		return "¡El bus azul ha ganado! 🥵 🥵 🥵"
 	default:
-		return "Pink bus wins!"
+		return "¡El bus rosa ha ganado! 🤪 🤪 🤪"
 	}
 }
 
@@ -170,11 +225,11 @@ func (m raceModel) View() string {
 
 	writeLine(fenceLine(trackWidth, row, false))
 
-	if m.finished {
-		b.WriteString("\n" + m.result + "  (q para salir)\n")
-	} else {
-		b.WriteString(fmt.Sprintf("\nPista: %d columnas · q para salir\n", trackWidth))
-	}
+	b.WriteString("\n")
+	b.WriteString(renderMenuBox(m, trackWidth))
+	b.WriteString("\n")
+	b.WriteString(lipgloss.PlaceHorizontal(trackWidth, lipgloss.Center, renderHint(m)))
+	b.WriteString("\n")
 
 	return b.String()
 }
