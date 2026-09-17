@@ -75,6 +75,18 @@ func renderMenuBox(m raceModel, trackWidth int) string {
 	)
 }
 
+// topPatternBanner is the decorative glyph block above the track, so the
+// track sits closer to the vertical middle of the screen instead of hugging
+// the top edge.
+const topBannerHeight = 6
+
+func topPatternBanner(trackWidth int) string {
+	return lipgloss.Place(trackWidth, topBannerHeight, lipgloss.Center, lipgloss.Center, "",
+		lipgloss.WithWhitespaceChars(patternGlyphChars),
+		lipgloss.WithWhitespaceForeground(patternColor),
+	)
+}
+
 func renderHint(m raceModel) string {
 	switch m.state {
 	case stateMenu:

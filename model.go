@@ -210,6 +210,9 @@ func (m raceModel) View() string {
 		b.WriteByte('\n')
 		row++
 	}
+	b.WriteString("\n")
+	b.WriteString(topPatternBanner(trackWidth))
+	b.WriteString("\n\n")
 
 	writeLine(fenceLine(trackWidth, row, true))
 
