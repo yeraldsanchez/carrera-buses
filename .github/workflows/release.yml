@@ -1,0 +1,37 @@
+name: Release Multiplatform Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+
+      - name: Compile Binaries
+        run: |
+          mkdir build
+          # Windows 64-bit
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o build/mi_programa-windows-amd64.exe main.go
+          # Linux 64-bit
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o build/mi_programa-linux-amd64 main.go
+          # macOS Intel
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o build/mi_programa-darwin-amd64 main.go
+          # macOS Apple Silicon (M1/M2/M3)
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o build/mi_programa-darwin-arm64 main.go
+
+      - name: Create GitHun Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
