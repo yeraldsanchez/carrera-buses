@@ -30,6 +30,9 @@ go build -o CarreraBuses .
 ./CarreraBuses
 ```
 
+Or download a prebuilt binary for your platform from the
+[Releases page](https://github.com/yeraldsanchez/carrera-buses/releases).
+
 ## Controls
 
 - `←` / `→`: choose between "Start" and "Exit"
