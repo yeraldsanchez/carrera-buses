@@ -1,9 +1,10 @@
 # CarreraBuses
 
-A bus racing game in the terminal (TUI) built with [Bubble Tea](https://github.com/charmbracelet/bubbletea)
-and [Lip Gloss](https://github.com/charmbracelet/lipgloss). Two pixel-art buses
-compete using spring physics on the track to the finish line; a menu
-lets you start the race or exit, and when finished displays the winner.
+A bus racing simulation in the terminal (TUI) built with [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+and [Lip Gloss](https://github.com/charmbracelet/lipgloss). Watch two pixel-art buses
+race each other with random acceleration patterns as they use spring physics to navigate
+the track to the finish line. A menu lets you start the race or exit, and when finished
+displays the winner.
 
 ## Requirements
 
